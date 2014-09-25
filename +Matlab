@@ -1,0 +1,270 @@
+%% Base Line Comparison
+% test=wblrnd(4,15,1000,1);
+% hist(test);
+clear
+clc
+seed = [1985072130 1  2 3 4 5 6 7 8 9];
+seed2 = [748932582 111 222 3333 4 5 6 7 8 9];
+seed3=[1631331038    12345  23456  34567  45678  56789  98765  87654  76543  65432]; 
+
+% [s1,s2,s3,s4,s5,s6]=RandStream.create('mlfg6331_64','NumStreams',6)
+% r1=randn(s1,100000,1);
+% r2=randn(s2,100000,1); 
+% r3=randn(s3,100000,1);
+% r4=randn(s4,100000,1);
+% r5=randn(s5,100000,1); 
+% r6=randn(s6,100000,1);
+% corrcoef([r1,r2,r3,r4,r5,r6])
+
+for r=1:1 %replication
+    
+        rand('seed',seed(r));
+        randn('seed',seed2(r));
+        %
+        nb=30;     %histogram bins
+        cost=100;  %collateral damage
+        Price=25;
+
+        alpha=2;
+        beta=15;
+
+        %% p is price.
+        % W is the warranty period.
+        %q(p, W) = k1* P^(-a)*((W + k2 )^b);
+
+        k1= 3*10^10; 
+        k2=.1;
+        P=231;
+        %a=[.1,.15,.20];
+        a=2; %.1;
+        b=.15; %2;
+
+        %Ww=[0:.5:8]
+        %Ww=[0.00274]
+       
+        zz=0;
+        
+        W=2;       %initial warranty time
+        w=2;
+        
+        n_int=20;   %number of interval for Firstala Loop
+        n_int2=20;  %number of interval for Second Loop. 
+       
+        alpha=3;
+        
+        for mm=1:n_int  
+           W=W+.5;   %how long warranty looks like. how long the support is.
+           w=2;
+           
+           for m=1:n_int2
+%                  zz=zz+.1
+                   w=w+.2; %extension length.
+                 
+                Ww=.5*w+W;  %for sale.
+
+%                  alpha=alpha+.1;
+
+                WLEN(m)=W;     % Wperception total.
+                
+                    q(m) = k1* P^(-a).*((Ww + k2 ).^b);  %sale size over Ww.
+                    q_fx(m) = k1* P^(-a).*((Ww + k2 ).^b);  %sale for fixed size over Ww.
+            %             figure(1)
+            %             plot(Ww,q./(Ww*365))
+            %             plot(Ww,q./(Ww))
+            %             grid on
+
+
+            %             figure(2)
+            %             plot(Ww,q)
+            %             grid on
+            %             xlabel('warranty period [year]');
+            %             ylabel('Sale Revenew over warranty coverage period');
+
+                    %cost of opportnity...
+                    Profit(m)=(q(m).*P).*.3 ;  %income. from this warranty 115Million DOllar!
+
+                    Profit_fx(m)=(q(m).*P).*.3 ;  
+
+                    %             plot(Ww,Profit)
+            %             grid on
+            %             title('Profit from warranty period');
+            %             xlabel('warranty period  [year]');
+            %             ylabel('Profit [Dollar or Rial]');
+                        %     Op_cost2=[0,Op_cost];
+                        %     Op_cost1=[Op_cost,0];
+                        %     plot(Op_cost1(1:7)-Op_cost2(1:7))  
+                        %     %17,000,000 Million Dollar
+                        %     grid on
+
+                    Rev_PD(m)=(q(m).*230)./(W*365);  %it could be over Ww.
+            %             plot(Ww,Rev_PD)
+            %             grid on
+            %             title('income per day from warranty period')
+
+                        qsize=q(m);
+                        t=[0:.1:6];
+                        R = exprnd(W/qsize,floor(qsize),1);  %%arrival RATE for Purchase time
+            %             hist(R)
+                    y=cumsum(R);   %arrival Time. Purchase time
+            %             hist(y,30);
+            %             figure(3);
+            %             hist(R)
+                        % demand for stock....
+
+                    %%  First Batch
+                    pop=floor(qsize);
+            %             figure();
+                    X1=wblrnd(alpha,beta,pop,1); % First failure for each.
+            %                 [n1, xout1] = hist(X1, nb);
+            %                 bar(xout1, n1, 'r'); % Plot in red
+            %                 hold on
+            %         plot([W,W],[0,pop/6],'--');
+                    %%
+                    % guys who failed before w. Replacement cost
+                    chk1=0<(W-X1);
+
+
+                    %% Warranty Exec
+
+
+                    WE=(W-X1);  %failed inside W. initial size.
+                    ch2=WE>0;
+                    TimeLeft=ch2.*WE;  %keeping index
+                    Ww2=(ch2.*X1)+w;   %new warranty limit.  +w.
+                    
+                    %TimeLeft=WE(WE>0); without index.
+
+            %             hist(TimeLeft(TimeLeft>0)*365)
+
+                    mean(TimeLeft(TimeLeft>0)*365);
+
+
+                    LazyNess=.1*trimf(TimeLeft,[0 .06*W  W]);
+                    WarExec=LazyNess.*(-log(rand(size(TimeLeft,1),1)));
+
+
+                    mean(LazyNess)*365;
+
+            %             subplot(1,2,1)
+            %             hist(LazyNess*365)
+            %             hist(LazyNess(LazyNess>0)*365)
+            %             title('lazyness')
+            %             subplot(1,2,2)
+            %             hist(WarExec*365,30)
+            %             hist(WarExec(WarExec>0)*365,30)
+            %             title('War. Exec delay') %people at zero are interesting!
+                    mean(WarExec)*365;
+
+                    LateEx=TimeLeft.*((W-TimeLeft+WarExec)>W);  %people who are late for first W.
+                    %hist(FAILED)
+                    size(LateEx(LateEx>0),1)/size(TimeLeft(TimeLeft>0),1);  %ratio of lazy people.
+           
+            N_failure_FW=sum(chk1); %number of units failed before first W.
+
+            N_claims(m)=N_failure_FW-size(LateEx(LateEx>0),1); %number of units failed before first W.
+ 
+%                     rep_cost=P;     %replacement cost = price. fixed for now.
+                    
+            pop2(m)= N_failure_FW;
+
+            
+
+            F2=wblrnd(.9*alpha,beta*1.1,pop2(r),1);  %second life lenght
+            
+            rebate=F2(F2<w);
+            N_claims_w2(m)=length(rebate);
+            Rebate_cost(m)= length(rebate)*P;
+            
+            
+            
+                    rep_cost_stoch = unifrnd(.35*P,.7*P,1,(N_claims(r)));
+                    total_repl_cost(m)=sum((rep_cost_stoch));%.*N_claims(r));
+                   
+%                     total_repl_cost(m)=N_claims(m).*rep_cost_stoch;
+
+                    NN_claim(r,m)=N_claims(r);
+    %                 rep_percent(r,m)=total_repl_cost(m)/Profit(m);
+
+%                     rep_percent(r,m,mm)=(-total_repl_cost(m)+Profit(m));
+                    Total_replacement(r,m,mm)=total_repl_cost(m)+Rebate_cost(m);
+                    
+                    Final_Profit(m)=(-total_repl_cost(m)-Rebate_cost(m)+Profit(m));
+                    
+                    ZZ_OUT(r)=(-total_repl_cost(m)-Rebate_cost(m)+Profit(m));
+                    
+                    ZZ(m,mm)=(-total_repl_cost(m)+Profit(m));
+
+            end %wba
+%               
+%               plot3(rep_present
+            
+%             Y_(m,mm) = mean(rep_percent,1);
+%             E_(m,mm) = std(rep_percent(:,1:1:n_int2));
+%             
+        end  %%W
+
+   end %replication
+      
+
+%    figure(1)
+%    plot(WLEN,total_repl_cost)
+%    hold on
+%    plot(WLEN,Profit,'r')
+%    figure(3)
+%    plot(WLEN,N_claims)
+%    hold on
+%    plot(WLEN,q,'c')
+   
+
+% [X,Y]=meshgrid(x,y)
+
+
+ figure(2)
+ hold on
+X= WLEN;
+Y = mean(rep_percent,1);
+E = std(rep_percent(:,1:1:n_int));
+errorbar(X,Y,E) 
+xlabel('Renewal Length Ratio WE=W+z*w');
+title('Profit')
+grid on
+%%
+%X1+y;  %%second demand to inv.
+%PHM1=wblrnd(alpha,beta,pop,1)-1;
+
+First_Renew=TimeLeft(TimeLeft>WarExec);%parts who failed inside and get renewed.
+%F1=X1(X1<W);  %failed inside first warranty--old version
+
+
+
+w2=X1(X1<W)+w   %second warranty limit
+% [n3, xout3] = hist(w2, nb);
+% bar(xout3, n3,'m'); % Plot in green
+
+L2=wblrnd(alpha,beta,length(F1),1);  %second life lenght
+x2=F1+L2;   %second failure
+% [n2, xout2] = hist(x2, nb);
+
+% hold on
+% bar(xout2, n2, 'g'); % Plot in green
+
+%% early failure for second failures
+rebate=x2(x2<w2);
+te=x2-w2
+cost= te(te<0)*(-1000)
+%hist(cost)
+mean(cost)
+    
+
+early2=x2-w2;
+
+rebate_cost= ((x2-w2)*cost) 
+% [n4, xout4] = hist(early2, nb);
+% hold on
+% bar(xout4, n4, 'k'); % distance to warranty
+
+%% 
+
+
+
+
